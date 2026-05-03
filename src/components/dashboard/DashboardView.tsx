@@ -52,7 +52,8 @@ export default function DashboardView({
         (s.service_id && s.service_id.toLowerCase().includes(lowerSearch)) ||
         (s.ชื่องานบริการ && s.ชื่องานบริการ.toLowerCase().includes(lowerSearch)) ||
         (s.รายชื่อกระทรวง && s.รายชื่อกระทรวง.toLowerCase().includes(lowerSearch)) ||
-        (s.รายชื่อหน่วยงาน && s.รายชื่อหน่วยงาน.toLowerCase().includes(lowerSearch))
+        (s.รายชื่อหน่วยงาน && s.รายชื่อหน่วยงาน.toLowerCase().includes(lowerSearch)) ||
+        (s.เหตุผล && s.เหตุผล.toLowerCase().includes(lowerSearch))
       );
     }
 
@@ -62,10 +63,13 @@ export default function DashboardView({
 
     if (serviceSortConfig !== null) {
       sortableItems.sort((a, b) => {
-        if (a[serviceSortConfig.key] < b[serviceSortConfig.key]) {
+        // Handle null values
+        const valA = a[serviceSortConfig.key] || "";
+        const valB = b[serviceSortConfig.key] || "";
+        if (valA < valB) {
           return serviceSortConfig.direction === 'asc' ? -1 : 1;
         }
-        if (a[serviceSortConfig.key] > b[serviceSortConfig.key]) {
+        if (valA > valB) {
           return serviceSortConfig.direction === 'asc' ? 1 : -1;
         }
         return 0;
@@ -181,6 +185,31 @@ export default function DashboardView({
                       <span className="text-[var(--foreground-neutral-light)]">รอการจัดสรรงบประมาณ</span>
                       <Badge variant="secondary">{stats.pendingFunding}</Badge>
                     </div>
+                    
+                    <div 
+                      className="flex justify-between items-center bg-[var(--background-neutral-medium)] p-[var(--spacing-md)] rounded-[var(--radius-md)] hover:bg-[var(--background-neutral-dark)] transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab('services');
+                        setServiceStatusFilter('ไม่พัฒนาเป็น e-Service');
+                      }}
+                    >
+                      <span className="text-[var(--foreground-neutral-light)]">ไม่พัฒนาเป็น e-Service</span>
+                      <Badge variant="destructive">{stats.notDeveloped}</Badge>
+                    </div>
+                    
+                    <div 
+                      className="flex justify-between items-center bg-[var(--background-neutral-medium)] p-[var(--spacing-md)] rounded-[var(--radius-md)] hover:bg-[var(--background-neutral-dark)] transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab('services');
+                        setServiceStatusFilter('เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง');
+                      }}
+                    >
+                      <span className="text-[var(--foreground-neutral-light)] truncate max-w-[70%]">เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง</span>
+                      <Badge variant="outline">{stats.existingNotLinked}</Badge>
+                    </div>
+
                     <div 
                       className="flex justify-between items-center bg-[var(--background-primary-lighter)] p-[var(--spacing-md)] rounded-[var(--radius-md)] mt-1 border border-[var(--primary-20)] hover:bg-[var(--background-primary-light)] transition-colors"
                       onClick={(e) => {
@@ -192,6 +221,33 @@ export default function DashboardView({
                       <span className="font-semibold text-[var(--foreground-primary-dark)]">รวมทั้งหมด</span>
                       <span className="font-bold text-[var(--primary-40)] text-[length:var(--font-size-title-m)]">{stats.totalServices}</span>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Reason Stats */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>สรุปเหตุผลที่ไม่เชื่อมโยง</CardTitle>
+                    <CardDescription>สถิติเหตุผลของงานบริการที่ไม่พัฒนาเป็น e-Service</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-[var(--spacing-md)] max-h-[360px] overflow-y-auto pr-2">
+                    {stats.reasonCounts?.length > 0 ? stats.reasonCounts.map((r: any, idx: number) => {
+                       const maxCount = stats.reasonCounts[0]?.count || 1;
+                       const width = Math.max(2, Math.round((r.count / maxCount) * 100));
+                       return (
+                         <div key={idx} className="flex flex-col gap-1 text-[length:var(--font-size-label-m)]">
+                            <div className="flex justify-between text-[var(--foreground-neutral-light)] items-end">
+                               <span className="truncate max-w-[85%] pr-2" title={r.reason}>{r.reason}</span>
+                               <span className="font-semibold text-[var(--foreground-primary-dark)]">{r.count}</span>
+                            </div>
+                            <div className="w-full bg-[var(--background-neutral-medium)] rounded-full h-2">
+                               <div className="bg-[var(--primary-30-base)] h-2 rounded-full transition-all duration-500" style={{ width: `${width}%` }}></div>
+                            </div>
+                         </div>
+                       );
+                    }) : (
+                      <div className="text-center p-4 text-[var(--foreground-neutral-lighter)]">ไม่มีข้อมูลเหตุผล</div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -223,12 +279,14 @@ export default function DashboardView({
                         <table className="w-full text-left text-[length:var(--font-size-body-m)]">
                           <thead className="bg-[var(--background-neutral-medium)] text-[var(--foreground-neutral-light)]">
                             <tr>
-                              <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)]">หน่วยงาน</th>
-                              <th className="p-[var(--spacing-md)] text-center">เชื่อมโยงแล้ว</th>
-                              <th className="p-[var(--spacing-md)] text-center">กำลังดำเนินการ</th>
-                              <th className="p-[var(--spacing-md)] text-center">รอจัดสรรงบฯ</th>
-                              <th className="p-[var(--spacing-md)] text-center">จำนวนโครงการ</th>
-                              <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] text-right">งบประมาณ</th>
+                              <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)] whitespace-nowrap">หน่วยงาน</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">เชื่อมโยงแล้ว</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">กำลังดำเนินการ</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">รอจัดสรรงบฯ</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">ไม่พัฒนา e-Service</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">e-Service ไม่เชื่อมโยง</th>
+                              <th className="p-[var(--spacing-md)] text-center whitespace-nowrap">จำนวนโครงการ</th>
+                              <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] text-right whitespace-nowrap">งบประมาณ</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -242,8 +300,10 @@ export default function DashboardView({
                                 <td className="p-[var(--spacing-md)] text-center"><Badge variant="success">{child.linked}</Badge></td>
                                 <td className="p-[var(--spacing-md)] text-center"><Badge variant="warning">{child.inProgress}</Badge></td>
                                 <td className="p-[var(--spacing-md)] text-center"><Badge variant="secondary">{child.pendingFunding}</Badge></td>
+                                <td className="p-[var(--spacing-md)] text-center"><Badge variant="destructive">{child.notDeveloped}</Badge></td>
+                                <td className="p-[var(--spacing-md)] text-center"><Badge variant="outline">{child.existingNotLinked}</Badge></td>
                                 <td className="p-[var(--spacing-md)] text-center"><Badge variant="default">{child.projectsCount}</Badge></td>
-                                <td className="p-[var(--spacing-md)] text-right font-medium text-[var(--foreground-primary-dark)]">{formatCurrency(child.budget)}</td>
+                                <td className="p-[var(--spacing-md)] text-right font-medium text-[var(--foreground-primary-dark)] whitespace-nowrap">{formatCurrency(child.budget)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -258,21 +318,21 @@ export default function DashboardView({
 
           {activeTab === 'services' && (
             <Card>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardHeader className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                 <CardTitle>รายชื่องานบริการ</CardTitle>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative">
+                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+                  <div className="relative flex-1 sm:flex-initial">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-neutral-lighter)] h-4 w-4" />
                     <input 
                       type="text" 
-                      placeholder="ค้นหา..." 
-                      className="pl-9 pr-4 py-2 rounded-md border border-[var(--stroke-neutral-default)] text-[length:var(--font-size-body-m)] w-full sm:w-64 outline-none focus:border-[var(--primary-40)]"
+                      placeholder="ค้นหา (รหัส, ชื่อ, เหตุผล)..." 
+                      className="pl-9 pr-4 py-2 rounded-md border border-[var(--stroke-neutral-default)] text-[length:var(--font-size-body-m)] w-full outline-none focus:border-[var(--primary-40)]"
                       value={serviceSearch}
                       onChange={(e) => setServiceSearch(e.target.value)}
                     />
                   </div>
                   <select 
-                    className="px-4 py-2 rounded-md border border-[var(--stroke-neutral-default)] text-[length:var(--font-size-body-m)] outline-none focus:border-[var(--primary-40)] bg-white"
+                    className="px-4 py-2 rounded-md border border-[var(--stroke-neutral-default)] text-[length:var(--font-size-body-m)] outline-none focus:border-[var(--primary-40)] bg-white w-full sm:w-auto max-w-full sm:max-w-xs truncate"
                     value={serviceStatusFilter}
                     onChange={(e) => setServiceStatusFilter(e.target.value)}
                   >
@@ -280,6 +340,8 @@ export default function DashboardView({
                     <option value="เชื่อมโยงแล้ว">เชื่อมโยงแล้ว</option>
                     <option value="อยู่ระหว่างการดำเนินการ">อยู่ระหว่างดำเนินการ</option>
                     <option value="to-be-funded">รอการจัดสรรงบประมาณ</option>
+                    <option value="ไม่พัฒนาเป็น e-Service">ไม่พัฒนาเป็น e-Service</option>
+                    <option value="เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง">เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง</option>
                   </select>
                 </div>
               </CardHeader>
@@ -288,26 +350,29 @@ export default function DashboardView({
                   <table className="w-full text-left text-[length:var(--font-size-body-m)]">
                     <thead className="bg-[var(--background-neutral-medium)] text-[var(--foreground-neutral-light)]">
                       <tr>
-                        <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestServiceSort('service_id')}>
+                        <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestServiceSort('service_id')}>
                           <div className="flex items-center gap-1">รหัสบริการ <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestServiceSort('ชื่องานบริการ')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap min-w-[200px]" onClick={() => requestServiceSort('ชื่องานบริการ')}>
                           <div className="flex items-center gap-1">ชื่อบริการ <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestServiceSort('รายชื่อกระทรวง')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestServiceSort('รายชื่อกระทรวง')}>
                           <div className="flex items-center gap-1">กระทรวง <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestServiceSort('รายชื่อหน่วยงาน')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestServiceSort('รายชื่อหน่วยงาน')}>
                           <div className="flex items-center gap-1">หน่วยงาน <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestServiceSort('สถานะ')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestServiceSort('สถานะ')}>
                           <div className="flex items-center gap-1">สถานะ <ArrowUpDown className="h-3 w-3" /></div>
+                        </th>
+                        <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors min-w-[200px]" onClick={() => requestServiceSort('เหตุผล')}>
+                          <div className="flex items-center gap-1">เหตุผลที่ไม่เชื่อมโยง <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredServices.length === 0 ? (
-                        <tr><td colSpan={5} className="text-center p-8 text-neutral-500">ไม่พบข้อมูลที่ค้นหา</td></tr>
+                        <tr><td colSpan={6} className="text-center p-8 text-neutral-500">ไม่พบข้อมูลที่ค้นหา</td></tr>
                       ) : (
                         filteredServices.map((s: any) => (
                           <tr key={s.service_id} className="border-b border-[var(--stroke-neutral-default)] hover:bg-[var(--background-neutral-light)]">
@@ -316,9 +381,18 @@ export default function DashboardView({
                             <td className="p-[var(--spacing-md)]">{s.รายชื่อกระทรวง}</td>
                             <td className="p-[var(--spacing-md)]">{s.รายชื่อหน่วยงาน}</td>
                             <td className="p-[var(--spacing-md)]">
-                              <Badge variant={s.สถานะ === 'เชื่อมโยงแล้ว' ? 'success' : s.สถานะ === 'อยู่ระหว่างการดำเนินการ' ? 'warning' : 'secondary'}>
+                              <Badge variant={
+                                s.สถานะ === 'เชื่อมโยงแล้ว' ? 'success' : 
+                                s.สถานะ === 'อยู่ระหว่างการดำเนินการ' ? 'warning' : 
+                                s.สถานะ === 'ไม่พัฒนาเป็น e-Service' ? 'destructive' : 
+                                s.สถานะ === 'เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง' ? 'outline' : 
+                                'secondary'
+                              }>
                                 {s.สถานะ === 'to-be-funded' ? 'รอการจัดสรรงบประมาณ' : s.สถานะ}
                               </Badge>
+                            </td>
+                            <td className="p-[var(--spacing-md)] text-[var(--foreground-neutral-light)] text-[length:var(--font-size-body-s)]">
+                              {s.เหตุผล || "-"}
                             </td>
                           </tr>
                         ))
@@ -353,19 +427,19 @@ export default function DashboardView({
                   <table className="w-full text-left text-[length:var(--font-size-body-m)]">
                     <thead className="bg-[var(--background-neutral-medium)] text-[var(--foreground-neutral-light)]">
                       <tr>
-                        <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestProjectSort('project_id')}>
+                        <th className="p-[var(--spacing-md)] rounded-tl-[var(--radius-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestProjectSort('project_id')}>
                           <div className="flex items-center gap-1">รหัสโครงการ <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestProjectSort('ชื่อโครงการ')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap min-w-[200px]" onClick={() => requestProjectSort('ชื่อโครงการ')}>
                           <div className="flex items-center gap-1">ชื่อโครงการ <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestProjectSort('รายชื่อกระทรวง')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestProjectSort('รายชื่อกระทรวง')}>
                           <div className="flex items-center gap-1">กระทรวง <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestProjectSort('รายชื่อหน่วยงาน')}>
+                        <th className="p-[var(--spacing-md)] cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestProjectSort('รายชื่อหน่วยงาน')}>
                           <div className="flex items-center gap-1">หน่วยงาน <ArrowUpDown className="h-3 w-3" /></div>
                         </th>
-                        <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] text-right cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors" onClick={() => requestProjectSort('กรอบงบประมาณ')}>
+                        <th className="p-[var(--spacing-md)] rounded-tr-[var(--radius-md)] text-right cursor-pointer hover:bg-[var(--background-neutral-dark)] transition-colors whitespace-nowrap" onClick={() => requestProjectSort('กรอบงบประมาณ')}>
                           <div className="flex items-center justify-end gap-1"><ArrowUpDown className="h-3 w-3" /> งบประมาณ</div>
                         </th>
                       </tr>

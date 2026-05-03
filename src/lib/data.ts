@@ -10,6 +10,9 @@ export interface Service {
   ชื่องานบริการ: string;
   สถานะ: string;
   ชื่อโครงการ: string | null;
+  reason_id?: string | null;
+  เหตุผล?: string | null;
+  หมายเหตุ?: string | null;
 }
 
 export interface Project {
@@ -30,17 +33,31 @@ export interface DataPayload {
 
 export const db = rawData as DataPayload;
 
+function getReasonCounts(services: Service[]) {
+  const counts: Record<string, number> = {};
+  for (const s of services) {
+    if (s.เหตุผล) {
+      counts[s.เหตุผล] = (counts[s.เหตุผล] || 0) + 1;
+    }
+  }
+  return Object.entries(counts).map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+}
+
 export function getOverallStats() {
   const linked = db.services.filter(s => s.สถานะ === 'เชื่อมโยงแล้ว').length;
   const inProgress = db.services.filter(s => s.สถานะ === 'อยู่ระหว่างการดำเนินการ').length;
   const pendingFunding = db.services.filter(s => s.สถานะ === 'to-be-funded').length;
-  const totalServices = linked + inProgress + pendingFunding;
+  const notDeveloped = db.services.filter(s => s.สถานะ === 'ไม่พัฒนาเป็น e-Service').length;
+  const existingNotLinked = db.services.filter(s => s.สถานะ === 'เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง').length;
+  
+  const totalServices = linked + inProgress + pendingFunding + notDeveloped + existingNotLinked;
+  const reasonCounts = getReasonCounts(db.services);
   
   const projectsCount = db.projects.length;
   const budget = db.projects.reduce((acc, p) => acc + (p.กรอบงบประมาณ || 0), 0);
   
   return {
-    linked, inProgress, pendingFunding, totalServices, projectsCount, budget
+    linked, inProgress, pendingFunding, notDeveloped, existingNotLinked, totalServices, reasonCounts, projectsCount, budget
   };
 }
 
@@ -51,14 +68,18 @@ export function getMinistryStats(ministryId: string) {
   const linked = mServices.filter(s => s.สถานะ === 'เชื่อมโยงแล้ว').length;
   const inProgress = mServices.filter(s => s.สถานะ === 'อยู่ระหว่างการดำเนินการ').length;
   const pendingFunding = mServices.filter(s => s.สถานะ === 'to-be-funded').length;
-  const totalServices = linked + inProgress + pendingFunding;
+  const notDeveloped = mServices.filter(s => s.สถานะ === 'ไม่พัฒนาเป็น e-Service').length;
+  const existingNotLinked = mServices.filter(s => s.สถานะ === 'เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง').length;
+  
+  const totalServices = linked + inProgress + pendingFunding + notDeveloped + existingNotLinked;
+  const reasonCounts = getReasonCounts(mServices);
   
   const projectsCount = mProjects.length;
   const budget = mProjects.reduce((acc, p) => acc + (p.กรอบงบประมาณ || 0), 0);
   const name = mServices.length > 0 ? mServices[0].รายชื่อกระทรวง : mProjects[0]?.รายชื่อกระทรวง || '';
   
   return {
-    name, linked, inProgress, pendingFunding, totalServices, projectsCount, budget
+    name, linked, inProgress, pendingFunding, notDeveloped, existingNotLinked, totalServices, reasonCounts, projectsCount, budget
   };
 }
 
@@ -69,14 +90,18 @@ export function getAgencyStats(ministryId: string, agencyId: string) {
   const linked = aServices.filter(s => s.สถานะ === 'เชื่อมโยงแล้ว').length;
   const inProgress = aServices.filter(s => s.สถานะ === 'อยู่ระหว่างการดำเนินการ').length;
   const pendingFunding = aServices.filter(s => s.สถานะ === 'to-be-funded').length;
-  const totalServices = linked + inProgress + pendingFunding;
+  const notDeveloped = aServices.filter(s => s.สถานะ === 'ไม่พัฒนาเป็น e-Service').length;
+  const existingNotLinked = aServices.filter(s => s.สถานะ === 'เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง').length;
+
+  const totalServices = linked + inProgress + pendingFunding + notDeveloped + existingNotLinked;
+  const reasonCounts = getReasonCounts(aServices);
   
   const projectsCount = aProjects.length;
   const budget = aProjects.reduce((acc, p) => acc + (p.กรอบงบประมาณ || 0), 0);
   const name = aServices.length > 0 ? aServices[0].รายชื่อหน่วยงาน : aProjects[0]?.รายชื่อหน่วยงาน || '';
   
   return {
-    name, linked, inProgress, pendingFunding, totalServices, projectsCount, budget
+    name, linked, inProgress, pendingFunding, notDeveloped, existingNotLinked, totalServices, reasonCounts, projectsCount, budget
   };
 }
 

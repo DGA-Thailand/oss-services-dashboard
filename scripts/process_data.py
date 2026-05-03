@@ -5,10 +5,10 @@ import os
 def process():
     print("Reading Excel file...")
     # Read sheets and drop empty IDs (like total rows)
-    df_services = pd.read_excel('government_services_merged_with_id.xlsx', sheet_name='งานบริการ')
+    df_services = pd.read_excel('services_all-3-5-2026.xlsx', sheet_name='งานบริการ')
     df_services = df_services.dropna(subset=['service_id'])
     
-    df_projects = pd.read_excel('government_services_merged_with_id.xlsx', sheet_name='โครงการ')
+    df_projects = pd.read_excel('services_all-3-5-2026.xlsx', sheet_name='โครงการ')
     df_projects = df_projects.dropna(subset=['project_id'])
 
     services_records = df_services.to_dict(orient='records')
