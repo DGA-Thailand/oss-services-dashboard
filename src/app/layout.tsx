@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anuphan } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const anuphan = Anuphan({
@@ -23,6 +24,15 @@ export default function RootLayout({
     <html lang="th" className={anuphan.className}>
       <body className="antialiased">
         {children}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-N0N990GGX7" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-N0N990GGX7');
+          `}
+        </Script>
       </body>
     </html>
   );
