@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,30 @@ export default function DashboardView({
   // Projects State
   const [projectSearch, setProjectSearch] = useState("");
   const [projectSortConfig, setProjectSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
+
+  const trackEvent = (action: string, params: Record<string, any>) => {
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      (window as any).gtag('event', action, params);
+    }
+  };
+
+  useEffect(() => {
+    if (serviceSearch) {
+      const timeoutId = setTimeout(() => {
+        trackEvent('search', { search_type: 'services', search_term: serviceSearch });
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [serviceSearch]);
+
+  useEffect(() => {
+    if (projectSearch) {
+      const timeoutId = setTimeout(() => {
+        trackEvent('search', { search_type: 'projects', search_term: projectSearch });
+      }, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [projectSearch]);
 
   const requestServiceSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -133,9 +157,9 @@ export default function DashboardView({
           )}
           
           <div className="flex gap-[var(--spacing-md)] mb-[var(--spacing-lg)] overflow-x-auto pb-2">
-             <button onClick={() => setActiveTab('summary')} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'summary' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>ภาพรวม (Summary)</button>
-             <button onClick={() => setActiveTab('services')} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'services' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>รายชื่องานบริการ</button>
-             <button onClick={() => setActiveTab('projects')} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'projects' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>รายชื่อโครงการ</button>
+             <button onClick={() => { setActiveTab('summary'); trackEvent('view_tab', { tab_name: 'summary' }); }} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'summary' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>ภาพรวม (Summary)</button>
+             <button onClick={() => { setActiveTab('services'); trackEvent('view_tab', { tab_name: 'services' }); }} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'services' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>รายชื่องานบริการ</button>
+             <button onClick={() => { setActiveTab('projects'); trackEvent('view_tab', { tab_name: 'projects' }); }} className={`px-4 py-2 whitespace-nowrap rounded-full font-medium ${activeTab === 'projects' ? 'bg-[var(--primary-30-base)] text-white' : 'bg-white text-[var(--foreground-neutral-default)] shadow-sm hover:bg-neutral-50'}`}>รายชื่อโครงการ</button>
           </div>
 
           {activeTab === 'summary' && (
@@ -145,6 +169,8 @@ export default function DashboardView({
                 <Card className="hover:border-[var(--primary-30-base)] transition-colors cursor-pointer" onClick={() => {
                   setActiveTab('services');
                   setServiceStatusFilter('all');
+                  trackEvent('view_tab', { tab_name: 'services' });
+                  trackEvent('filter_status', { status: 'all' });
                 }}>
                   <CardHeader>
                     <CardTitle>งานบริการทั้งหมด</CardTitle>
@@ -158,6 +184,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('เชื่อมโยงแล้ว');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'เชื่อมโยงแล้ว' });
                       }}
                     >
                       <span className="text-[var(--foreground-neutral-light)]">เชื่อมโยงแล้ว</span>
@@ -169,6 +197,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('อยู่ระหว่างการดำเนินการ');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'อยู่ระหว่างการดำเนินการ' });
                       }}
                     >
                       <span className="text-[var(--foreground-neutral-light)]">อยู่ระหว่างดำเนินการ</span>
@@ -180,6 +210,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('to-be-funded');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'to-be-funded' });
                       }}
                     >
                       <span className="text-[var(--foreground-neutral-light)]">รอการจัดสรรงบประมาณ</span>
@@ -192,6 +224,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('ไม่พัฒนาเป็น e-Service');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'ไม่พัฒนาเป็น e-Service' });
                       }}
                     >
                       <span className="text-[var(--foreground-neutral-light)]">ไม่พัฒนาเป็น e-Service</span>
@@ -204,6 +238,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง' });
                       }}
                     >
                       <span className="text-[var(--foreground-neutral-light)] truncate max-w-[70%]">เป็น e-Service แล้ว ไม่เชื่อมโยงกลาง</span>
@@ -216,6 +252,8 @@ export default function DashboardView({
                         e.stopPropagation();
                         setActiveTab('services');
                         setServiceStatusFilter('all');
+                        trackEvent('view_tab', { tab_name: 'services' });
+                        trackEvent('filter_status', { status: 'all' });
                       }}
                     >
                       <span className="font-semibold text-[var(--foreground-primary-dark)]">รวมทั้งหมด</span>
@@ -252,7 +290,7 @@ export default function DashboardView({
                 </Card>
 
                 {/* Projects Stats */}
-                <Card className="hover:border-[var(--primary-30-base)] transition-colors cursor-pointer" onClick={() => setActiveTab('projects')}>
+                <Card className="hover:border-[var(--primary-30-base)] transition-colors cursor-pointer" onClick={() => { setActiveTab('projects'); trackEvent('view_tab', { tab_name: 'projects' }); }}>
                   <CardHeader>
                     <CardTitle>โครงการทั้งหมด</CardTitle>
                     <CardDescription>โครงการที่หน่วยงานเสนอ และอยู่ระหว่างการรอจัดสรรงบประมาณ</CardDescription>
@@ -334,7 +372,7 @@ export default function DashboardView({
                   <select 
                     className="px-4 py-2 rounded-md border border-[var(--stroke-neutral-default)] text-[length:var(--font-size-body-m)] outline-none focus:border-[var(--primary-40)] bg-white w-full sm:w-auto max-w-full sm:max-w-xs truncate"
                     value={serviceStatusFilter}
-                    onChange={(e) => setServiceStatusFilter(e.target.value)}
+                    onChange={(e) => { setServiceStatusFilter(e.target.value); trackEvent('filter_status', { status: e.target.value }); }}
                   >
                     <option value="all">สถานะทั้งหมด</option>
                     <option value="เชื่อมโยงแล้ว">เชื่อมโยงแล้ว</option>
